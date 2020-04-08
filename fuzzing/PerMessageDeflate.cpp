@@ -14,14 +14,14 @@ struct StaticData {
     uWS::ZlibContext zlibContext;
 
     uWS::InflationStream inflationStream;
-    uWS::DeflationStream deflationStream = DEDICATED_COMPRESSOR_8KB;
+    uWS::DeflationStream deflationStream = uWS::DEDICATED_COMPRESSOR_8KB;
 } staticData;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     /* Why is this padded? */
     makeChunked(makePadded(data, size), size, [](const uint8_t *data, size_t size) {
-        std::string_view inflation = staticData.inflationStream.inflate(&staticData.zlibContext, std::string_view((char *) data, size), 256);
+        auto [inflation, valid] = staticData.inflationStream.inflate(&staticData.zlibContext, std::string_view((char *) data, size), 256);
         if (inflation.length() > 256) {
             /* Cause ASAN to freak out */
             delete (int *) (void *) 1;
